@@ -1,128 +1,135 @@
-docker build -t idc-backend .
-docker run --rm -p 8000:8000 --entrypoint python --env-file .env idc-backend main.py
-cdk bootstrap --region us-east-1 --profile idc
-cdk deploy --profile idc
-
 # Animal Happiness Backend
 
-A FastAPI-based backend application for animal data collection and retrieval.
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi) ![AWS Lambda](https://img.shields.io/badge/AWS_Lambda-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white) ![DynamoDB](https://img.shields.io/badge/Amazon%20DynamoDB-4053D6?style=for-the-badge&logo=Amazon%20DynamoDB&logoColor=white) ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 
 ## Overview
 
-The Animal Happiness Backend provides a REST API to collect, store, and query data related to animal behaviors and responses. It uses a serverless architecture with FastAPI, DynamoDB, and AWS Lambda compatibility.
+The Animal Happiness Backend is a serverless API that collects, stores, and queries data related to cow affective states from the Animal Happiness system. It provides endpoints for recording cow responses (optimistic or pessimistic) and retrieving historical data for analysis.
 
 ## Features
 
-- REST API for animal data management
-- Time-series data storage and retrieval
-- Filtering by animal ID, response type, and time range
-- Batch data upload capabilities
-- Pagination support for large datasets
-- API key authentication for security
+- **RESTful API**: FastAPI-based endpoints for data management
+- **Serverless Architecture**: AWS Lambda for scalable, cost-effective operation
+- **NoSQL Database**: DynamoDB for flexible data storage
+- **Authentication**: API key protection for security
+- **Efficient Querying**: Global Secondary Index (GSI) for time-based searches
+- **CORS Support**: Cross-origin resource sharing for frontend integration
+
+## Technology Stack
+
+- **Framework**: FastAPI
+- **Deployment**: AWS Lambda via AWS CDK
+- **Database**: Amazon DynamoDB
+- **API Gateway**: AWS API Gateway
+- **Authentication**: API Key (X-API-Key header)
+- **Container**: Docker
+
+## API Endpoints
+
+- `POST /animal/data`: Create a new animal data entry
+- `POST /animal/data/batch`: Batch upload animal data
+- `GET /animal/data`: Get all animal data with pagination
+- `GET /animal/data/cow/{cow_id}`: Get animal data by cow ID
+- `GET /animal/data/{entry_id}`: Get animal data by entry ID
+- `GET /animal/data/response/{response_type}`: Get animal data by response type
 
 ## Local Development
 
 ### Prerequisites
 
 - Python 3.11+
-- Docker (optional)
-- AWS account (for DynamoDB)
-- AWS CLI configured (for local DynamoDB access)
+- Docker
+- AWS CLI configured
 
 ### Setup
 
 1. Clone the repository:
 
-   ```
-   git clone <repository-url>
+   ```bash
+   git clone https://github.com/ahidvt/animal-happiness-backend.git
    cd animal-happiness-backend
    ```
 
-2. Create a virtual environment:
+2. Create a `.env` file in the image directory:
 
-   ```
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install dependencies:
-
-   ```
-   pip install -r requirements.txt
-   ```
-
-4. Create a `.env` file based on `.env.example`:
-   ```
+   ```bash
+   cd image
    cp .env.example .env
    ```
-   Update the values in the `.env` file as needed.
 
-### Running Locally
+3. Fill in the required environment variables in `.env`:
 
-#### Method 1: Direct Python Execution
+   ```
+   API_KEY=your_api_key
+   AWS_ACCESS_KEY_ID=your_aws_access_key
+   AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+   DYNAMODB_TABLE_NAME_ANIMAL=animal-happiness-data
+   ```
 
-```
-cd src
-python main.py
-```
+4. Build and run the Docker container:
 
-The API will be available at http://localhost:8001
+   ```bash
+   docker build -t idc-backend .
+   docker run --rm -p 8000:8000 --entrypoint python --env-file .env idc-backend main.py
+   ```
 
-#### Method 2: Using Docker
-
-```
-docker build -t animal-happiness-backend .
-docker run --rm -p 8001:8001 -v $(pwd)/.env:/var/task/.env animal-happiness-backend
-```
-
-### API Documentation
-
-Once the server is running, access the OpenAPI documentation at http://localhost:8001/docs
-
-### Key Endpoints
-
-- `POST /animal/data` - Create a new animal data entry
-- `POST /animal/data/batch` - Batch upload animal data
-- `GET /animal/data` - Get all animal data with pagination
-- `GET /animal/data/cow/{cow_id}` - Get animal data by cow ID
-- `GET /animal/data/{entry_id}` - Get animal data by entry ID
-- `GET /animal/data/response/{response_type}` - Get animal data by response type
-
-## DynamoDB Setup
-
-For local development, the application will attempt to create the required DynamoDB table automatically. For production deployment, it's recommended to create the table using infrastructure as code (e.g., AWS CDK, CloudFormation, or Terraform).
-
-### Table Structure
-
-- **Table Name**: animal-happiness-data (configurable via environment variable)
-- **Primary Key**: entry_id (String)
-- **GSI**: source-time-index
-  - Partition Key: source (String)
-  - Sort Key: time (String)
+5. The API will be available at http://localhost:8000/docs
 
 ## AWS Deployment
 
-The application is designed to be deployed as an AWS Lambda function with API Gateway integration using AWS CDK or similar tools.
+### Prerequisites
 
-### Lambda Deployment
+- AWS CDK installed
+- AWS CLI configured with appropriate permissions
+- Node.js and npm
 
-```
-# Example deployment using AWS CDK (requires additional setup)
-cdk deploy --profile your-profile-name
-```
+### Deployment Steps
 
-## Sample Request
+1. Navigate to the infrastructure directory:
 
-```bash
-curl -X 'POST' \
-  'http://localhost:8000/animal/data' \
-  -H 'accept: application/json' \
-  -H 'X-API-Key: your-api-key-here' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "cow_id": "cow123",
-  "response_type": "happy",
-  "time": "2025-05-03T12:34:56.789Z",
-  "source": "api"
-}'
-```
+   ```bash
+   cd animal-happiness-backend-infra
+   ```
+
+2. Install CDK dependencies:
+
+   ```bash
+   npm install
+   ```
+
+3. Create a `.env` file in the infrastructure directory with the same variables as the local `.env.example` file
+
+4. Bootstrap CDK (if not already done):
+
+   ```bash
+   cdk bootstrap --region us-east-1 --profile idc
+   ```
+
+5. Deploy the stack:
+
+   ```bash
+   cdk deploy --profile idc
+   ```
+
+6. Note the output URL for API access
+   **Note for IDC students**: The API URL is already provided in your Credentials folder.
+
+## Database Schema
+
+- **Table Name**: animal-happiness-data
+- **Primary Key**: entry_id (UUID)
+- **GSI**: source-time-index
+  - Partition Key: source
+  - Sort Key: time
+- **Fields**:
+  - entry_id: Unique identifier (UUID)
+  - cow_id: Identifier for the cow
+  - response_type: Either "optimistic" or "pessimistic"
+  - time: ISO 8601 timestamp
+  - source: Data origin (e.g., "Raspberry Pi" or "api")
+
+## Contributors
+
+Developed by Dhruv Varshney of the Animal Happiness Team at Virginia Tech as part of the Interdisciplinary Design Capstone (IDC) Spring 2025.
+
+For questions, contact dhruvvarshney@vt.edu or message on LinkedIn: https://www.linkedin.com/in/dvar/
